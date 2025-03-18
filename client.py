@@ -1,7 +1,8 @@
 import pygame
 import random
+import socket
 
-#functions for rending
+#functions for rendering
 
 #Function to render the grid
 def drawGrid():
@@ -100,6 +101,55 @@ def updateScreen():
 	pygame.display.flip()
 
 
+###############################################################################################################################################################
+
+#Functions for network transmission
+
+def sendGamePacket():
+	global serverIP, serverPort, p1_coords, p1_coords_spike, p1_xattack_button, p2_coords, p2_coords_spike, p2_xattack_button, playerNumber
+	
+	client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	
+	client_socket.connect((serverIP, serverPort))
+	print("connected!")
+	#Send data
+	if(playerNumber == 1):
+		if(p1_xattack_button == True):
+			x_byte = 1
+		else:
+			x_byte = 0
+		client_socket.sendall(b'1',p1_coords[0].to_bytes(1),p1_coords[1].to_bytes(1),p1_coords_spike[0].to_bytes(1),p1_coords_spike[1].to_bytes(1),x_byte.to_bytes(1))
+	elif(playerNumber == 2):
+		if(p2_xattack_button == True):
+			x_byte = 1
+		else:
+			x_byte = 0
+		client_socket.sendall(b'1',p2_coords[0].to_bytes(1),p2_coords[1].to_bytes(1),p2_coords_spike[0].to_bytes(1),p2_coords_spike[1].to_bytes(1),x_byte.to_bytes(1))
+		
+	#Get packet of other player's movement
+	response = client_socket.recv(1024).decode()
+	print("received!")
+	
+	if(response[0]== '1'):
+		p1_coords[0] = int(response[1])
+		p1_coords[1] = int(response[2])
+		p1_coords_spike[0] = int(response[3])
+		p1_coords_spike[1] = int(response[4])
+		if(respones[5] == '1'):
+			p1_xattack_button == True
+		else:
+			p1_xattack_button == False
+	elif(response[0] == '2'):
+		p2_coords[0] = int(response[1])
+		p2_coords[1] = int(response[2])
+		p2_coords_spike[0] = int(response[3])
+		p2_coords_spike[1] = int(response[4])
+		if(respones[5] == '1'):
+			p2_xattack_button == True
+		else:
+			p2_xattack_button == False
+
+	client_socket.close()
 ###############################################################################################################################################################
 
 #Functions for game logic
@@ -251,6 +301,7 @@ def movement_conflict_resolution(p1_coords_old, p2_coords_old):
 	boing = pygame.mixer.Sound("boing.ogg")
 	boing_channel.play(boing)
 	gameNotes += "Both players went for the same space!\n"
+
 	
 def xAttack():
 	global board, p1_health, p1_coords, p1_xattack_button, p1_coords_spike, p2_health, p2_coords, p2_xattack_button, p2_coords_spike, gameNotes
@@ -263,9 +314,7 @@ def xAttack():
 			if(board[p1_coords[0]-1][p1_coords[1]] == 2):
 				board[p1_coords[0]-1][p1_coords[1]] = 7
 				p2_health -=1
-				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
 			#if spike is in line of fire
 			elif(board[p1_coords[0]-1][p1_coords[1]] == 3):
 				board[p1_coords[0]-1][p1_coords[1]] = 3
@@ -276,9 +325,8 @@ def xAttack():
 			if(board[p1_coords[0]][p1_coords[1]-1] == 2):
 				board[p1_coords[0]][p1_coords[1]-1] = 7
 				p2_health -=1
-				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p1_coords[0]][p1_coords[1]-1] == 3):
 				board[p1_coords[0]][p1_coords[1]-1] = 3
 			else:
@@ -287,9 +335,8 @@ def xAttack():
 			if(board[p1_coords[0]+1][p1_coords[1]] == 2):
 				board[p1_coords[0]+1][p1_coords[1]] = 7
 				p2_health -=1
-				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p1_coords[0]+1][p1_coords[1]] == 3):
 				board[p1_coords[0]+1][p1_coords[1]] = 3
 			else:
@@ -298,9 +345,8 @@ def xAttack():
 			if(board[p1_coords[0]][p1_coords[1]+1] == 2):
 				board[p1_coords[0]][p1_coords[1]+1] = 7
 				p2_health -=1
-				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p1_coords[0]][p1_coords[1]+1] == 3):
 				board[p1_coords[0]][p1_coords[1]+1] = 3
 			else:
@@ -312,9 +358,8 @@ def xAttack():
 			if(board[p2_coords[0]-1][p2_coords[1]-1] == 1):
 				board[p2_coords[0]-1][p2_coords[1]-1] = 6
 				p1_health -=1
-				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p2_coords[0]-1][p2_coords[1]-1] == 3):
 				board[p2_coords[0]-1][p2_coords[1]-1] = 3
 			else:
@@ -324,9 +369,8 @@ def xAttack():
 			if(board[p2_coords[0]-1][p2_coords[1]+1] == 1):
 				board[p2_coords[0]-1][p2_coords[1]+1] = 6
 				p1_health -=1
-				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p2_coords[0]-1][p2_coords[1]+1] == 3):
 				board[p2_coords[0]-1][p2_coords[1]+1] = 3
 			else:
@@ -336,9 +380,8 @@ def xAttack():
 			if(board[p2_coords[0]+1][p2_coords[1]-1] == 1):
 				board[p2_coords[0]+1][p2_coords[1]-1] = 6
 				p1_health -=1
-				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p2_coords[0]+1][p2_coords[1]-1] == 3):
 				board[p2_coords[0]+1][p2_coords[1]-1] = 3
 			else:
@@ -348,9 +391,8 @@ def xAttack():
 			if(board[p2_coords[0]+1][p2_coords[1]+1] == 1):
 				board[p2_coords[0]+1][p2_coords[1]+1] = 6
 				p1_health -=1
-				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
-				oof_channel.play(oof)
+				
+				
 			elif(board[p2_coords[0]+1][p2_coords[1]+1] == 3):
 				board[p2_coords[0]+1][p2_coords[1]+1] = 3
 			else:
@@ -373,7 +415,7 @@ def resolveSpikes():
 			p2_coords_spike=[-1,-1]
 		#take damage
 		p1_health -=1
-		gameNotes += "Player 1 stepped on a spike!\n"
+		
 		
 	#p2 steps on a spike
 	if((p2_coords == p1_coords_spike) or (p2_coords == p2_coords_spike)):
@@ -387,15 +429,13 @@ def resolveSpikes():
 			p2_coords_spike=[-1,-1]
 		#take damage
 		p2_health -=1
-		gameNotes += "Player 2 stepped on a spike!\n"
 		
 	#play oof
-	oof = pygame.mixer.Sound("oof.ogg")
-	oof_channel.play(oof)
+	
 		
 def gameLogic():
 	#global variables
-	global board, timer_value, gameNotes, last_pressed_move_p1, p1_coords, p1_spike_button, p1_coords_spike, p1_xattack_button, last_pressed_move_p2, p2_coords, p2_spike_button, p2_coords_spike, p2_xattack_button
+	global board, timer_value, gameNotes, last_pressed_move_p1, p1_coords, p1_spike_button, p1_coords_spike, p1_xattack_button, last_pressed_move_p2, p2_coords, p2_spike_button, p2_coords_spike, p2_xattack_button, playerNumber
 	
 	#Reset audio
 	boing_channel.stop()
@@ -417,24 +457,29 @@ def gameLogic():
 	p1_coords_old = [p1_coords[0], p1_coords[1]]
 	p2_coords_old = [p2_coords[0], p2_coords[1]]
 
-	#Player 1 movement
-	if(last_pressed_move_p1[1] != 0 and p1_spike_button == False and p1_xattack_button == False):
-		p1_movement()
+	if(playerNumber == 1): #calculate position locally
+		#Player 1 movement
+		if(last_pressed_move_p1[1] != 0 and p1_spike_button == False and p1_xattack_button == False):
+			p1_movement()
 
-	#Player 1 Spikes
-	if(p1_spike_button == True and last_pressed_move_p1[1] != 0 and p1_xattack_button == False):
-		p1_spikes()
-		p1_spike_button = False
+		#Player 1 Spikes
+		if(p1_spike_button == True and last_pressed_move_p1[1] != 0 and p1_xattack_button == False):
+			p1_spikes()
+			p1_spike_button = False
 		
-	#Player 2 movement
-	if(last_pressed_move_p2[1] != 0 and p2_spike_button == False and p2_xattack_button == False):
-		p2_movement()
+	if(playerNumber == 2):	#calculate position locally
+		#Player 2 movement
+		if(last_pressed_move_p2[1] != 0 and p2_spike_button == False and p2_xattack_button == False):
+			p2_movement()
 
-	#Player 2 Spikes
-	if(p2_spike_button == True and last_pressed_move_p2[1] != 0 and p2_xattack_button == False):
-		p2_spikes()
-		p2_spike_button = False
-		
+		#Player 2 Spikes
+		if(p2_spike_button == True and last_pressed_move_p2[1] != 0 and p2_xattack_button == False):
+			p2_spikes()
+			p2_spike_button = False
+	
+	sendGamePacket()
+	
+	
 	#Resolve positioning conflicts
 	if(p1_coords[0] == p2_coords[0] and p1_coords[1] == p2_coords[1]):
 		movement_conflict_resolution(p1_coords_old, p2_coords_old)
@@ -460,10 +505,6 @@ def gameLogic():
 		p1_xattack_button = False
 		last_pressed_move_p2 = [0,0]
 		p2_xattack_button = False
-	#Play audio cue if no other audio is playing
-	if not boing_channel.get_busy() and not oof_channel.get_busy():
-		ding = pygame.mixer.Sound("ding.ogg")
-		oof_channel.play(ding)
 	
 	#One final check to make sure everything is reset
 	last_pressed_move_p1 = [0,0]
@@ -472,10 +513,24 @@ def gameLogic():
 	last_pressed_move_p2 = [0,0]
 	p2_spike_button = False
 	p2_xattack_button = False
+	
+	#Reset timer
+	timer_value = gameUpdateTimer/1000
+	pygame.time.set_timer(TIMER_EVENT, 0)
+	pygame.time.set_timer(TIMER_EVENT, 2000)
 
 #############################################################################################################################################
 
 #Main
+
+#Get necessary data
+print("Welcome to my unnamed game!")
+serverIP = input("Please enter the IP of the server you wish to connect to (default is 127.0.0.1): ") or "127.0.0.1"
+serverPort =  input("Please enter the port of the server you wish to connect to (default is 2299): ") or 2299
+playerNumber = input("Please enter your player number (1 or 2): ")
+gameUpdateTimer = int(input("Enter the value for gameUpdateTimer (must be the same for both players, default is 3000): ") or 3000)
+
+#Some sort of logic here to wait until both players are connected and ready
 
 #Initialize PyGame
 pygame.init()
@@ -489,7 +544,7 @@ ding_channel = pygame.mixer.Channel(2)
 #Set up display
 WIDTH, HEIGHT = 1000, 900
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Couch Client")
+pygame.display.set_caption("Local Client")
 
 #Colors
 WHITE = (255, 255, 255)
@@ -511,7 +566,6 @@ board = [[1, 0, 0, 0, 0, 0],
 	[0, 0, 0, 0, 0, 2]]
 
 #Clock
-gameUpdateTimer = 3000 #Get this value from user to see how long turns are
 clock = pygame.time.Clock()
 timer_value = gameUpdateTimer/1000
 deltaTime = 0
@@ -560,19 +614,20 @@ while running:
 		elif event.type == TIMER_EVENT: #Every 2 seconds, game action
 			gameLogic()
 			timer_value = gameUpdateTimer/1000
-		elif event.type == pygame.KEYDOWN: #Get player movement and actions
+		elif event.type == pygame.KEYDOWN and playerNumber == 1: #Get player 1 movement and actions
 			if event.key in [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]:
 				last_pressed_move_p1.pop(0)
 				last_pressed_move_p1.append(event.key)
+			if event.key == pygame.K_q:
+				p1_spike_button = not p1_spike_button
+			if event.key == pygame.K_e:
+				p1_xattack_button = not p1_xattack_button
+		elif event.type == pygame.KEYDOWN and playerNumber == 2: #Get player 2 movement and actions
 			if event.key in [pygame.K_i, pygame.K_j, pygame.K_k, pygame.K_l]:
 				last_pressed_move_p2.pop(0)
 				last_pressed_move_p2.append(event.key)
-			if event.key == pygame.K_q:
-				p1_spike_button = not p1_spike_button
 			if event.key == pygame.K_u:
 				p2_spike_button = not p2_spike_button
-			if event.key == pygame.K_e:
-				p1_xattack_button = not p1_xattack_button
 			if event.key == pygame.K_o:
 				p2_xattack_button = not p2_xattack_button
 
