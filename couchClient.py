@@ -248,7 +248,7 @@ def movement_conflict_resolution(p1_coords_old, p2_coords_old):
 		p1_coords = p1_coords_old.copy()
 		p2_coords = p2_coords_old.copy()
 	#Play boing sound effect and add game note to indicate conflict
-	boing = pygame.mixer.Sound("boing.ogg")
+	boing = pygame.mixer.Sound("sfx/boing.ogg")
 	boing_channel.play(boing)
 	gameNotes += "Both players went for the same space!\n"
 	
@@ -264,7 +264,7 @@ def xAttack():
 				board[p1_coords[0]-1][p1_coords[1]] = 7
 				p2_health -=1
 				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			#if spike is in line of fire
 			elif(board[p1_coords[0]-1][p1_coords[1]] == 3):
@@ -277,7 +277,7 @@ def xAttack():
 				board[p1_coords[0]][p1_coords[1]-1] = 7
 				p2_health -=1
 				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p1_coords[0]][p1_coords[1]-1] == 3):
 				board[p1_coords[0]][p1_coords[1]-1] = 3
@@ -288,7 +288,7 @@ def xAttack():
 				board[p1_coords[0]+1][p1_coords[1]] = 7
 				p2_health -=1
 				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p1_coords[0]+1][p1_coords[1]] == 3):
 				board[p1_coords[0]+1][p1_coords[1]] = 3
@@ -299,7 +299,7 @@ def xAttack():
 				board[p1_coords[0]][p1_coords[1]+1] = 7
 				p2_health -=1
 				gameNotes += "Player 2 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p1_coords[0]][p1_coords[1]+1] == 3):
 				board[p1_coords[0]][p1_coords[1]+1] = 3
@@ -313,7 +313,7 @@ def xAttack():
 				board[p2_coords[0]-1][p2_coords[1]-1] = 6
 				p1_health -=1
 				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p2_coords[0]-1][p2_coords[1]-1] == 3):
 				board[p2_coords[0]-1][p2_coords[1]-1] = 3
@@ -325,7 +325,7 @@ def xAttack():
 				board[p2_coords[0]-1][p2_coords[1]+1] = 6
 				p1_health -=1
 				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p2_coords[0]-1][p2_coords[1]+1] == 3):
 				board[p2_coords[0]-1][p2_coords[1]+1] = 3
@@ -337,7 +337,7 @@ def xAttack():
 				board[p2_coords[0]+1][p2_coords[1]-1] = 6
 				p1_health -=1
 				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p2_coords[0]+1][p2_coords[1]-1] == 3):
 				board[p2_coords[0]+1][p2_coords[1]-1] = 3
@@ -349,7 +349,7 @@ def xAttack():
 				board[p2_coords[0]+1][p2_coords[1]+1] = 6
 				p1_health -=1
 				gameNotes += "Player 1 was attacked!\n"
-				oof = pygame.mixer.Sound("oof.ogg")
+				oof = pygame.mixer.Sound("sfx/oof.ogg")
 				oof_channel.play(oof)
 			elif(board[p2_coords[0]+1][p2_coords[1]+1] == 3):
 				board[p2_coords[0]+1][p2_coords[1]+1] = 3
@@ -390,7 +390,7 @@ def resolveSpikes():
 		gameNotes += "Player 2 stepped on a spike!\n"
 		
 	#play oof
-	oof = pygame.mixer.Sound("oof.ogg")
+	oof = pygame.mixer.Sound("sfx/oof.ogg")
 	oof_channel.play(oof)
 		
 def gameLogic():
@@ -462,7 +462,7 @@ def gameLogic():
 		p2_xattack_button = False
 	#Play audio cue if no other audio is playing
 	if not boing_channel.get_busy() and not oof_channel.get_busy():
-		ding = pygame.mixer.Sound("ding.ogg")
+		ding = pygame.mixer.Sound("sfx/ding.ogg")
 		oof_channel.play(ding)
 	
 	#One final check to make sure everything is reset

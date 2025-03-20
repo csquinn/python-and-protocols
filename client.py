@@ -1,6 +1,7 @@
 import pygame
 import random
 import socket
+import time
 
 #functions for rendering
 
@@ -112,30 +113,37 @@ def sendGamePacket():
 	
 	client_socket.connect((serverIP, serverPort))
 	print("connected!")
+	
 	#Send data
 	if(playerNumber == 1):
+		#time.sleep(.005) #waiting to reduce a collision? Not sure
 		if(p1_xattack_button == True):
 			x_byte = 1
 		else:
 			x_byte = 0
-		client_socket.sendall(b'1',p1_coords[0].to_bytes(1),p1_coords[1].to_bytes(1),p1_coords_spike[0].to_bytes(1),p1_coords_spike[1].to_bytes(1),x_byte.to_bytes(1))
+		data = ('1'+str(p1_coords[0])+str(p1_coords[1])+str(p1_coords_spike[0])+str(p1_coords_spike[1])+str(x_byte))
+		print("attempting send?"+ data)
+		client_socket.sendall(data.encode())
 	elif(playerNumber == 2):
+		#time.sleep(.01)
 		if(p2_xattack_button == True):
 			x_byte = 1
 		else:
 			x_byte = 0
-		client_socket.sendall(b'1',p2_coords[0].to_bytes(1),p2_coords[1].to_bytes(1),p2_coords_spike[0].to_bytes(1),p2_coords_spike[1].to_bytes(1),x_byte.to_bytes(1))
+		data = ('2'+str(p2_coords[0])+str(p2_coords[1])+str(p2_coords_spike[0])+str(p2_coords_spike[1])+str(x_byte))
+		print("attempting send?"+ data)
+		client_socket.sendall(data.encode())
 		
 	#Get packet of other player's movement
 	response = client_socket.recv(1024).decode()
-	print("received!")
-	
+	print("received! "+ response)
+	response = str(response)
 	if(response[0]== '1'):
 		p1_coords[0] = int(response[1])
 		p1_coords[1] = int(response[2])
 		p1_coords_spike[0] = int(response[3])
 		p1_coords_spike[1] = int(response[4])
-		if(respones[5] == '1'):
+		if(response[5] == '1'):
 			p1_xattack_button == True
 		else:
 			p1_xattack_button == False
@@ -144,7 +152,7 @@ def sendGamePacket():
 		p2_coords[1] = int(response[2])
 		p2_coords_spike[0] = int(response[3])
 		p2_coords_spike[1] = int(response[4])
-		if(respones[5] == '1'):
+		if(response[5] == '1'):
 			p2_xattack_button == True
 		else:
 			p2_xattack_button == False
@@ -173,7 +181,7 @@ def p1_movement():
 			p1_coords[1] +=1
 
 			#straight line movement
-		elif(last_pressed_move_p1[1] == pygame.K_w and p1_coords[0] > 0):
+		elif(last_pressed_move_p1[1 ] == pygame.K_w and p1_coords[0] > 0):
 			p1_coords[0] -=1
 		elif(last_pressed_move_p1[1] == pygame.K_a and p1_coords[1] > 0):
 			p1_coords[1] -=1
@@ -407,12 +415,12 @@ def resolveSpikes():
 	if((p1_coords == p1_coords_spike) or (p1_coords == p2_coords_spike)):
 		#remove correct spike
 		if(p1_coords == p1_coords_spike and p1_coords == p2_coords_spike): #logic for both spikes being in same place
-			p1_coords_spike=[-1,-1]
-			p2_coords_spike=[-1,-1]
+			p1_coords_spike=[7,7]
+			p2_coords_spike=[7,7]
 		elif(p1_coords == p1_coords_spike):
-			p1_coords_spike=[-1,-1]
+			p1_coords_spike=[7,7]
 		elif(p1_coords == p2_coords_spike):
-			p2_coords_spike=[-1,-1]
+			p2_coords_spike=[7,7]
 		#take damage
 		p1_health -=1
 		
@@ -421,12 +429,12 @@ def resolveSpikes():
 	if((p2_coords == p1_coords_spike) or (p2_coords == p2_coords_spike)):
 		#remove correct spike
 		if(p2_coords == p1_coords_spike and p2_coords == p2_coords_spike): #logic for both spikes being in same place
-			p1_coords_spike=[-1,-1]
-			p2_coords_spike=[-1,-1]
+			p1_coords_spike=[7,7]
+			p2_coords_spike=[7,7]
 		elif(p2_coords == p1_coords_spike):
-			p1_coords_spike=[-1,-1]
+			p1_coords_spike=[7,7]
 		elif(p2_coords == p2_coords_spike):
-			p2_coords_spike=[-1,-1]
+			p2_coords_spike=[7,7]
 		#take damage
 		p2_health -=1
 		
@@ -435,8 +443,10 @@ def resolveSpikes():
 		
 def gameLogic():
 	#global variables
-	global board, timer_value, gameNotes, last_pressed_move_p1, p1_coords, p1_spike_button, p1_coords_spike, p1_xattack_button, last_pressed_move_p2, p2_coords, p2_spike_button, p2_coords_spike, p2_xattack_button, playerNumber
+	global board, timer_value, pauseTime, gameNotes, last_pressed_move_p1, p1_coords, p1_spike_button, p1_coords_spike, p1_xattack_button, last_pressed_move_p2, p2_coords, p2_spike_button, p2_coords_spike, p2_xattack_button, playerNumber
 	
+	#Pause clock
+	pauseTime = True
 	#Reset audio
 	boing_channel.stop()
 	oof_channel.stop()
@@ -477,6 +487,7 @@ def gameLogic():
 			p2_spikes()
 			p2_spike_button = False
 	
+	#Get online player's information
 	sendGamePacket()
 	
 	
@@ -493,9 +504,9 @@ def gameLogic():
 	board[p2_coords[0]][p2_coords[1]] = 2 #Update player 2 location
 	
 	#Finalize Spike position
-	if(p1_coords_spike != [-1, -1]):
+	if(p1_coords_spike != [7,7]):
 		board[p1_coords_spike[0]][p1_coords_spike[1]] = 3
-	if(p2_coords_spike != [-1, -1]):
+	if(p2_coords_spike != [7,7]):
 		board[p2_coords_spike[0]][p2_coords_spike[1]] = 3
 	
 	#xAttacks
@@ -515,6 +526,7 @@ def gameLogic():
 	p2_xattack_button = False
 	
 	#Reset timer
+	pauseTime = False
 	timer_value = gameUpdateTimer/1000
 	pygame.time.set_timer(TIMER_EVENT, 0)
 	pygame.time.set_timer(TIMER_EVENT, 2000)
@@ -527,8 +539,9 @@ def gameLogic():
 print("Welcome to my unnamed game!")
 serverIP = input("Please enter the IP of the server you wish to connect to (default is 127.0.0.1): ") or "127.0.0.1"
 serverPort =  input("Please enter the port of the server you wish to connect to (default is 2299): ") or 2299
-playerNumber = input("Please enter your player number (1 or 2): ")
-gameUpdateTimer = int(input("Enter the value for gameUpdateTimer (must be the same for both players, default is 3000): ") or 3000)
+playerNumber = int(input("Please enter your player number (1 or 2): "))
+playerNumber = int(playerNumber)
+gameUpdateTimer = int(input("Enter the value for gameUpdateTimer (must be the same for both players, default is 5000): ") or 5000)
 
 #Some sort of logic here to wait until both players are connected and ready
 
@@ -569,11 +582,12 @@ board = [[1, 0, 0, 0, 0, 0],
 clock = pygame.time.Clock()
 timer_value = gameUpdateTimer/1000
 deltaTime = 0
+pauseTime = False
 
 #Custom Timer Event
 #This should manage the logic every few seconds
 TIMER_EVENT = pygame.USEREVENT + 1 #Custom event identifier
-pygame.time.set_timer(TIMER_EVENT, gameUpdateTimer) #Trigger the timer event every 2 seconds
+pygame.time.set_timer(TIMER_EVENT, gameUpdateTimer) #Trigger the timer event every x seconds
 
 #General variables
  
@@ -582,7 +596,7 @@ last_pressed_move_p1= [0, 0] #movement buttons pressed, handled every TIMER_EVEN
 p1_spike_button = False #tracks if spike button is pressed
 p1_coords = [0, 0] #current position on grid
 p1_health = 3 #current health
-p1_coords_spike = [-1, -1] #current spikes position, -1,-1 means not placed
+p1_coords_spike = [7,7] #current spikes position, 7,7 means not placed
 p1_xattack_button = False #tracks if xAttack button is pressed
 
 #p2 variables
@@ -590,7 +604,7 @@ last_pressed_move_p2 = [0, 0]
 p2_spike_button = False
 p2_coords = [5, 5]
 p2_health = 3
-p2_coords_spike = [-1, -1]
+p2_coords_spike = [7,7]
 p2_xattack_button = False
 
 gameNotes=""
@@ -599,8 +613,9 @@ gameNotes=""
 running = True
 while running:
 #Update timer values
-	deltaTime = clock.tick(120) / 1000
-	timer_value -= deltaTime
+	if(pauseTime == False):
+		deltaTime = clock.tick(120) / 1000
+		timer_value -= deltaTime
 #check health
 	if(p1_health <= 0 or p2_health <= 0):
 		running = False
@@ -614,6 +629,7 @@ while running:
 		elif event.type == TIMER_EVENT: #Every 2 seconds, game action
 			gameLogic()
 			timer_value = gameUpdateTimer/1000
+			pygame.time.set_timer(TIMER_EVENT, gameUpdateTimer)
 		elif event.type == pygame.KEYDOWN and playerNumber == 1: #Get player 1 movement and actions
 			if event.key in [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]:
 				last_pressed_move_p1.pop(0)
