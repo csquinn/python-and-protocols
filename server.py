@@ -3,8 +3,11 @@ import threading
 import time
 import copy
 
+#Networking variables
 HOST = "127.0.0.1"
 PORT = 2299
+
+#Game variables
 p1_coords = [-1, -1]
 p1_coords_spike = [-1, -1]
 p1_xattack_button = False
@@ -12,114 +15,103 @@ p2_coords = [-1, -1]
 p2_coords_spike = [-1, -1]
 p2_xattack_button = False
 
-cont1 = False
-cont2 = False
-updated_p1 = False
-updated_p2 = False
-
-# Store client connections and data
-clients = []
-
-
-def handle_client(conn, addr):
-    global p1_coords, p1_coords_spike, p1_xattack_button, p2_coords, p2_coords_spike, p2_xattack_button, clients, cont1, cont2, updated_p1, updated_p2
-    client_id = -1
-    print(f"[+] Client connected from {addr}")
-
-    # Receive data
-    data = conn.recv(1500).decode()
-    data = str(data)
-    print(f"[Client {addr}] Sent: {data}")
-    print(data[0])
-    if(data[0]== '1'):
-        client_id = 0
-        p1_coords[0] = int(data[1])
-        p1_coords[1] = int(data[2])
-        p1_coords_spike[0] = int(data[3])
-        p1_coords_spike[1] = int(data[4])
-        if(data[5] == '1'):
-            p1_xattack_button == True
-        else:
-            p1_xattack_button == False
-        clients.append(((conn, client_id), int(data[0])))
-        updated_p1 = True
-    elif(data[0] == '2'):
-        client_id = 1
-        p2_coords[0] = int(data[1])
-        p2_coords[1] = int(data[2])
-        p2_coords_spike[0] = int(data[3])
-        p2_coords_spike[1] = int(data[4])
-        if(data[5] == '1'):
-            p2_xattack_button == True
-        else:
-            p2_xattack_button == False
-        clients.append(((conn, client_id), int(data[0])))
-        updated_p2 = True
-            
-    
-
-    # Wait until both clients have sent data
-    while len(clients) < 2 or updated_p1 == False or updated_p2 == False:
-        time.sleep(.005) #This is in the top 5 worst things I've ever done
-    time.sleep(.01)
-    # Send data to both clients
-    listInUse = False
-    while listInUse == True:
-    	time.sleep(.005)
-    time.sleep(.01)
-    listInUse = True
-    print("This is client_id: " + str(client_id))
-    if(clients[client_id][1] == 2):
-        
-        if(p1_xattack_button == True):
-            x_byte = 1
-        else:
-            x_byte = 0
-        returnPacket = ('1'+str(p1_coords[0])+str(p1_coords[1])+str(p1_coords_spike[0])+str(p1_coords_spike[1])+str(x_byte))
-        print(returnPacket)
-        conn.sendall(returnPacket.encode())
-        cont1 = True
-        listInUse = False
-    elif(clients[client_id][1] == 1):
-        
-        if(p2_xattack_button == True):
-            x_byte = 1
-        else:
-            x_byte = 0
-        returnPacket = ('2'+str(p2_coords[0])+str(p2_coords[1])+str(p2_coords_spike[0])+str(p2_coords_spike[1])+str(x_byte))
-        print(returnPacket)
-        conn.sendall(returnPacket.encode())
-        cont2 = True
-        listInUse = False
+#Function for interpreting packet that contains p1 position info, sent by p1 client
+def getP1Info(data):
+	global p1_coords, p1_coords_spike, p1_xattack_button
+	if(data[0]== '1'):
+		p1_coords[0] = int(data[1])
+		p1_coords[1] = int(data[2])
+		p1_coords_spike[0] = int(data[3])
+		p1_coords_spike[1] = int(data[4])
+		if(int(data[5]) == 1):
+			p1_xattack_button = True
+		else:
+			p1_xattack_button = False
+			
+#Function for interpreting packet that contains p1 position info, sent by p2 client
+def getP2Info(data):
+	global p2_coords, p2_coords_spike, p2_xattack_button
+	if(data[0]== '2'):
+		p2_coords[0] = int(data[1])
+		p2_coords[1] = int(data[2])
+		p2_coords_spike[0] = int(data[3])
+		p2_coords_spike[1] = int(data[4])
+		if(int(data[5]) == 1):
+			p2_xattack_button = True
+		else:
+			p2_xattack_button = False
 		
-    print(f"[Client {client_id}] data Sent")
-    
-    while cont1 == False or cont2 == False:
-        conn.close()
+#Create packet that has p1 location in it, sent to p2 client	
+def craftP1PacketforP2():
+	global p1_coords, p1_coords_spike, p1_xattack_button
+	x_value = 0
+	if(p1_xattack_button == True):
+		x_value = 1
+	returnPacket = ('1'+str(p1_coords[0])+str(p1_coords[1])+str(p1_coords_spike[0])+str(p1_coords_spike[1])+str(x_value))
+	print(x_value)
+	print(p1_xattack_button)
+	print(returnPacket)
+	return returnPacket
+	
+#Create packet that has p2 location in it, sent to p1 client	
+def craftP2PacketforP1():
+	global p2_coords, p2_coords_spike, p2_xattack_button
+	x_value = 0
+	if(p2_xattack_button == True):
+		x_value = 1
+	returnPacket = ('2'+str(p2_coords[0])+str(p2_coords[1])+str(p2_coords_spike[0])+str(p2_coords_spike[1])+str(x_value))
+	return returnPacket
+	
+#Perform initial handshake with both players to get their connection info
+def handshake():
+	global server_socket, player1Client, player2Client
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server_socket.bind((HOST, PORT))
+	
+	server_socket.listen(2)  # Listen for up to 2 clients
+	
+	#Get client #1
+	global conn1, addr1
+	conn1, addr1 = server_socket.accept()
+	sentPacket = conn1.recv(1000).decode()
+	if sentPacket == '1':
+		player1Client = conn1
+	elif sentPacket == '2':
+		player2Client = conn1
+		
+	#Get client #2
+	global conn2, addr2
+	conn2, addr2 = server_socket.accept()
+	sentPacket = conn2.recv(1000).decode()
+	if sentPacket == '1':
+		player1Client = conn2
+	elif sentPacket == '2':
+		player2Client = conn2
+		
+	#Send go ahead signal
+	player1Client.sendall(b'1')
+	player2Client.sendall(b'1')
+	
+#Recieve, assign, and send all necessary info
+def middleman():
+	global server_socket, player1Client, p1_coords, p1_coords_spike, p1_xattack_button, player2Client, p2_coords, p2_coords_spike, p2_xattack_button
+	
+	p1SentPacket = player1Client.recv(1000).decode()
+	
+	getP1Info(p1SentPacket)
+			
+	p2SentPacket = player2Client.recv(1000).decode()
+	
+	getP2Info(p2SentPacket)
+	
+	player2Client.sendall(craftP1PacketforP2().encode())
+	
+	player1Client.sendall(craftP2PacketforP1().encode())
+#Main
+handshake()
 
-def start_server():
-    global server_socket, clients, cont1, cont2
-    server_socket.listen(2)  # Listen for up to 2 clients
-    print(f"[*] Server listening on {HOST}:{PORT}")
-
-    # Accept two clients
-    
-    conn1, addr1 = server_socket.accept()
-    threading.Thread(target=handle_client, args=(conn1, addr1)).start()
-    
-    conn2, addr2 = server_socket.accept()
-    threading.Thread(target=handle_client, args=(conn2, addr2)).start()
-    
-    #wait clause
-    while cont1 == False or cont2 == False:
-        time.sleep(.005)
-    cont1 = False
-    cont2 = False
-    updated_p1 = False
-    updated_p2 = False
-    clients = []
-    
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((HOST, PORT))
 while True:
-    start_server()
+	#try:
+	middleman()
+	#except:
+	#	break
